@@ -35,7 +35,6 @@ async function main() {
 // codice corto da riscrivere al bot: W1 <piattaforma> H<k nel hash 1/0> D<decifrato 1/0> M<da memoria: S/D/0> V<SecureStorage 1/0>
 function codice(ok, da) { const P = tg ? tg.platform : 'fuori'; document.getElementById('cod').textContent = 'W1 ' + P + ' H' + (daHash(H0) ? 1 : 0) + ' D' + ok +
   ' M' + (da === 'SecureStorage' ? 'S' : da === 'DeviceStorage' ? 'D' : '0') + ' V' + (tg && tg.SecureStorage ? 1 : 0); }
-const show = () => { document.getElementById('d').textContent = out.join('
-'); };
+const show = () => { document.getElementById('d').textContent = out.join(String.fromCharCode(10)); };
 main().then(show, (e) => { d('errore: ' + e.message); show(); });
 </script></body></html>
