@@ -1,0 +1,37 @@
+<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Prova W1</title><script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>body{font:16px system-ui,sans-serif;margin:16px;background:var(--tg-theme-bg-color,#111);color:var(--tg-theme-text-color,#eee)}
+h1{font-size:22px}.ok{color:#3c3}.no{color:#e55}pre{white-space:pre-wrap;word-break:break-all;font-size:12px;opacity:.8}button{font-size:16px;padding:10px 14px;margin:6px 0}</style></head>
+<body><h1>Prova W1: chiave della web app</h1><div id="r">...</div><button id="salva">Salva la chiave nel telefono</button><pre id="d"></pre>
+<script>
+// Canali Studio, A223 W1 (prova tecnica, dati finti): la chiave arriva nel frammento #k= ? si decifra con crypto.subtle?
+// Si salva in SecureStorage o DeviceStorage e si rilegge alla seconda apertura senza #k=?
+const IV = "V4oOLXbIrr9zBhl-", CT = "fW0yFTps_q4VkFMLErPTmdWDtZWOwZM4CXcJb3rQafRuuShduC7eJuaQ_k99414cy6HxRlAOSj22FN6goNRzklfaoi4JdWX3fw";
+const H0 = location.hash, tg = window.Telegram && Telegram.WebApp, out = [], d = (x) => out.push(x);
+const b64 = (s) => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((s.length + 3) % 4)), (c) => c.charCodeAt(0));
+const daHash = (h) => { const m = /[#&]k=([A-Za-z0-9_-]{40,})/.exec(h || ''); return m ? m[1] : null; };
+async function decifra(k) { const key = await crypto.subtle.importKey('raw', b64(k), 'AES-GCM', false, ['decrypt']);
+  return new TextDecoder().decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64(IV) }, key, b64(CT))); }
+const leggi = (st, nome) => new Promise((res) => { try { st.getItem('k', (e, v) => res(e ? null : v)); } catch (e) { d(nome + ' errore: ' + e.message); res(null); } });
+async function main() {
+  let k = daHash(H0), da = 'frammento #k=';
+  d('hash all avvio: ' + (H0 ? H0.slice(0, 60) + (H0.length > 60 ? '... (' + H0.length + ' car.)' : '') : '(vuoto)'));
+  d('k nel hash: ' + (k ? 'SI' : 'NO') + ' | sessionStorage tg: ' + (sessionStorage.getItem('__telegram__initParams') ? 'si' : 'no'));
+  if (tg) { tg.ready(); d('piattaforma ' + tg.platform + ', versione ' + tg.version + ', 9.0+: ' + tg.isVersionAtLeast('9.0'));
+    d('SecureStorage: ' + !!tg.SecureStorage + ', DeviceStorage: ' + !!tg.DeviceStorage + ', initData: ' + (tg.initData ? tg.initData.length + ' car.' : 'vuoto')); }
+  else d('Telegram.WebApp assente (aperta fuori da Telegram)');
+  d('crypto.subtle: ' + !!(window.crypto && crypto.subtle));
+  if (!k && tg && tg.SecureStorage) { k = await leggi(tg.SecureStorage, 'SecureStorage'); da = 'SecureStorage'; }
+  if (!k && tg && tg.DeviceStorage) { k = await leggi(tg.DeviceStorage, 'DeviceStorage'); da = 'DeviceStorage'; }
+  const r = document.getElementById('r');
+  if (!k) { r.innerHTML = '<b class="no">decifrato: NO</b> (nessuna chiave: ne hash ne memoria)'; return; }
+  try { const t = await decifra(k); r.innerHTML = '<b class="ok">decifrato: ok</b> (chiave da ' + da + ')<br>' + t; }
+  catch (e) { r.innerHTML = '<b class="no">decifrato: NO</b> (' + e.message + ')'; }
+  document.getElementById('salva').onclick = () => { const st = tg && (tg.SecureStorage || tg.DeviceStorage);
+    if (!st) { d('nessuna memoria disponibile'); show(); return; }
+    st.setItem('k', k, (e, ok) => { d('salvata in ' + (tg.SecureStorage ? 'SecureStorage' : 'DeviceStorage') + ': ' + (e ? 'errore ' + e : ok)); show(); }); };
+}
+const show = () => { document.getElementById('d').textContent = out.join('
+'); };
+main().then(show, (e) => { d('errore: ' + e.message); show(); });
+</script></body></html>
